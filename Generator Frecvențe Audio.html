@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generator Frecvențe Audio Continuu</title>
+  <meta name="description" content="Generator simplu de frecvențe audio cu canale stereo și sunete binaurale." />
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --border-focus: #06b6d4;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #06b6d4;
+      --accent-hover: #22d3ee;
+      --green: #10b981;
+      --green-hover: #059669;
+      --red: #ef4444;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      line-height: 1.4;
+    }
+
+    .app-container {
+      max-width: 960px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .top-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 1.25rem;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .master-bar {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 0.5rem;
+      }
+      .master-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .master-vol-container {
+        width: 100%;
+      }
+      .player-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .freq-box-wrap, .channel-wrap, .vol-wrap, .player-actions-group {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .player-actions-group {
+        margin-left: 0;
+      }
+    }
+
+    .master-vol-container {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .master-vol-slider {
+      flex: 1;
+      width: 100%;
+      min-width: 60px;
+      height: 6px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      outline: none;
+    }
+
+    .btn-master-play {
+      background-color: var(--accent);
+      color: #030712;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 8px;
+    }
+    .btn-master-play:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .btn-master-stop {
+      background-color: #f59e0b;
+      color: #030712;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 8px;
+    }
+    .btn-master-stop:hover {
+      background-color: #d97706;
+    }
+
+    .btn-add {
+      background-color: #2563eb;
+      color: #fff;
+    }
+    .btn-add:hover {
+      background-color: #1d4ed8;
+    }
+
+    .btn-reset {
+      background-color: #1f2937;
+      color: #ef4444;
+      border-color: #374151;
+    }
+    .btn-reset:hover {
+      background-color: #374151;
+      border-color: #ef4444;
+    }
+
+    .btn-download {
+      background-color: #1f2937;
+      color: var(--text-muted);
+      border-color: #374151;
+      font-size: 0.75rem;
+      padding: 0.4rem 0.75rem;
+    }
+    .btn-download:hover {
+      background-color: #374151;
+      color: #fff;
+    }
+
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .player-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      transition: border-color 0.15s;
+    }
+    .player-row.is-sounding {
+      border-color: var(--green);
+    }
+
+    .freq-box-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+
+    .freq-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .step-btn {
+      width: 28px;
+      height: 33px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: var(--text);
+      font-size: 1.1rem;
+      font-weight: 700;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.1s;
+      flex-shrink: 0;
+    }
+    .step-btn:hover {
+      background: #374151;
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .step-btn:active {
+      background: var(--accent);
+      color: #030712;
+      transform: scale(0.95);
+    }
+
+    .freq-input {
+      width: 85px;
+      height: 33px;
+      background: #030712;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 0 0.4rem;
+      font-family: monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+      outline: none;
+      appearance: textfield;
+      -webkit-appearance: none;
+      -moz-appearance: textfield;
+    }
+    .freq-input::-webkit-outer-spin-button,
+    .freq-input::-webkit-inner-spin-button {
+      -webkit-appearance: none !important;
+      margin: 0 !important;
+      display: none !important;
+    }
+    .freq-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 6px rgba(6, 182, 212, 0.3);
+    }
+
+    .hz-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: monospace;
+    }
+
+    .channel-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
+
+    .channel-selector {
+      display: inline-flex;
+      background: #030712;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .chan-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .chan-btn:hover {
+      color: #fff;
+    }
+    .chan-btn.active {
+      background: var(--accent);
+      color: #030712;
+      font-weight: 700;
+    }
+
+    .vol-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
+    .vol-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .vol-slider {
+      width: 70px;
+      height: 5px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .player-actions-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .btn-play-row {
+      background: #1f2937;
+      color: #f3f4f6;
+      border: 1px solid #374151;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.8rem;
+      height: 33px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn-play-row:hover {
+      background: #374151;
+    }
+    .btn-play-row.is-playing {
+      background: var(--green);
+      color: #030712;
+      border-color: var(--green);
+    }
+    .btn-play-row.is-playing:hover {
+      background: var(--green-hover);
+    }
+
+    .btn-delete {
+      background: transparent;
+      border: 1px solid #374151;
+      color: #ef4444;
+      padding: 0.4rem 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 700;
+      height: 33px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .btn-delete:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #ef4444;
+    }
+    .btn-delete:disabled {
+      opacity: 0.2;
+      cursor: not-allowed;
+      border-color: #374151;
+      color: var(--text-muted);
+    }
+
+    .btn-add-big {
+      border: 2px dashed #374151;
+      background: rgba(17, 24, 39, 0.4);
+      color: var(--text-muted);
+      border-radius: 10px;
+      padding: 0.9rem;
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 700;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-add-big:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(17, 24, 39, 0.8);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Antet cu Titlu -->
+    <div class="top-section">
+      <div class="header-row">
+        <h1 class="title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"></path><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
+          Generator Frecvențe Audio Continuu
+        </h1>
+      </div>
+    </div>
+
+    <!-- Bara Master de Control (Fără sticky/fixed) -->
+    <div class="master-bar">
+      <button id="btn-master-toggle" class="btn btn-master-play" title="Pornește Toate Sunetele">
+        <svg id="master-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      </button>
+
+      <div class="master-vol-container">
+        <span style="font-weight: 600; white-space: nowrap; flex-shrink: 0; color: #fff;">Volum Total:</span>
+        <button class="step-btn" id="master-vol-minus" title="Scade Volumul cu 1%" style="width: 26px; height: 28px; font-size: 1rem;">-</button>
+        <input type="range" id="master-volume" class="master-vol-slider" min="0" max="1" step="0.005" value="0.08">
+        <button class="step-btn" id="master-vol-plus" title="Crește Volumul cu 1%" style="width: 26px; height: 28px; font-size: 1rem;">+</button>
+        <span id="master-vol-percent" style="font-family: monospace; font-size: 0.8rem; font-weight: 700; color: var(--accent); min-width: 38px; text-align: right; flex-shrink: 0;">8%</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+        <button id="btn-add-top" class="btn btn-add">
+          + Adaugă Sunet
+        </button>
+        <button id="btn-reset" class="btn btn-reset" title="Resetează la un singur tab (234 Hz)">
+          Șterge Sunete
+        </button>
+      </div>
+    </div>
+
+    <!-- Secțiune Sunete Binaurale -->
+    <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1.25rem; display: flex; align-items: center; gap: 0.5rem; justify-content: space-between; flex-wrap: wrap; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);">
+      <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); white-space: nowrap;">Binaurale:</span>
+      <button class="btn btn-download" id="btn-binaural-1" style="flex: 1; min-width: 90px;">100 / 104 Hz</button>
+      <button class="btn btn-download" id="btn-binaural-2" style="flex: 1; min-width: 90px;">200 / 204 Hz</button>
+      <button class="btn btn-download" id="btn-binaural-3" style="flex: 1; min-width: 90px;">300 / 304 Hz</button>
+      <button class="btn btn-download" id="btn-binaural-4" style="flex: 1; min-width: 90px;">400 / 404 Hz</button>
+    </div>
+
+    <!-- Lista de playere -->
+    <div id="players-list" class="players-list"></div>
+
+    <!-- Buton mare jos de adăugare -->
+    <div id="btn-add-bottom" class="btn-add-big">
+      <span>+ Adaugă încă un sunet / frecvență</span>
+    </div>
+
+  </div>
+
+  <script>
+    let audioCtx = null;
+    let masterGain = null;
+    let masterPlaying = false;
+    let masterVolume = 0.08;
+
+    let players = [
+      {
+        id: 'p-1',
+        frequency: 234,
+        channel: 'center',
+        volume: 0.08,
+        isPlaying: false
+      }
+    ];
+
+    const nodeMap = new Map();
+
+    function initAudio() {
+      if (audioCtx && audioCtx.state !== 'closed') {
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        return;
+      }
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContextClass();
+
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(masterVolume, audioCtx.currentTime);
+
+      const compressor = audioCtx.createDynamicsCompressor();
+      compressor.threshold.setValueAtTime(-1, audioCtx.currentTime);
+      compressor.knee.setValueAtTime(8, audioCtx.currentTime);
+      compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+
+      masterGain.connect(compressor);
+      compressor.connect(audioCtx.destination);
+    }
+
+    function channelToPan(ch) {
+      if (ch === 'left') return -1;
+      if (ch === 'right') return 1;
+      return 0;
+    }
+
+    function syncAudio() {
+      initAudio();
+      if (!audioCtx || !masterGain) return;
+
+      const now = audioCtx.currentTime;
+      masterGain.gain.setTargetAtTime(masterPlaying ? masterVolume : 0, now, 0.02);
+
+      const currentIds = new Set(players.map(p => p.id));
+
+      for (const [id, bundle] of nodeMap.entries()) {
+        if (!currentIds.has(id)) {
+          bundle.gain.gain.setTargetAtTime(0, now, 0.02);
+          setTimeout(() => {
+            try {
+              bundle.osc.stop();
+              bundle.osc.disconnect();
+              bundle.gain.disconnect();
+              if (bundle.panner) bundle.panner.disconnect();
+            } catch (e) {}
+          }, 30);
+          nodeMap.delete(id);
+        }
+      }
+
+      players.forEach(p => {
+        let bundle = nodeMap.get(p.id);
+
+        if (!bundle) {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          let panner = null;
+
+          if (typeof audioCtx.createStereoPanner === 'function') {
+            panner = audioCtx.createStereoPanner();
+            panner.pan.setValueAtTime(channelToPan(p.channel), now);
+          }
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(Math.max(1, p.frequency), now);
+          gain.gain.setValueAtTime(0, now);
+
+          if (panner) {
+            osc.connect(gain);
+            gain.connect(panner);
+            panner.connect(masterGain);
+          } else {
+            osc.connect(gain);
+            gain.connect(masterGain);
+          }
+
+          try {
+            osc.start(now);
+          } catch (e) {}
+
+          bundle = { osc, gain, panner };
+          nodeMap.set(p.id, bundle);
+        }
+
+        const targetFreq = Math.max(1, Math.min(22000, p.frequency));
+        if (Math.abs(bundle.osc.frequency.value - targetFreq) > 0.01) {
+          bundle.osc.frequency.setTargetAtTime(targetFreq, now, 0.015);
+        }
+
+        if (bundle.panner) {
+          bundle.panner.pan.setTargetAtTime(channelToPan(p.channel), now, 0.02);
+        }
+
+        const shouldSound = p.isPlaying && masterPlaying;
+        const targetGain = shouldSound ? Math.max(0, Math.min(1, p.volume)) : 0;
+        bundle.gain.gain.setTargetAtTime(targetGain, now, 0.02);
+      });
+
+      updateMasterUI();
+    }
+
+    function renderPlayers() {
+      const container = document.getElementById('players-list');
+      container.innerHTML = '';
+
+      players.forEach((p) => {
+        const isSounding = p.isPlaying && masterPlaying;
+
+        const row = document.createElement('div');
+        row.className = `player-row ${isSounding ? 'is-sounding' : ''}`;
+
+        row.innerHTML = `
+          <div class="freq-box-wrap">
+            <span class="freq-label">Frecvență:</span>
+            <button class="step-btn" data-id="${p.id}" data-action="step-freq" data-delta="-1" title="Scade 1 Hz">-</button>
+            <input type="text" inputmode="decimal" class="freq-input" value="${p.frequency}" data-id="${p.id}" data-action="freq-input">
+            <button class="step-btn" data-id="${p.id}" data-action="step-freq" data-delta="1" title="Crește 1 Hz">+</button>
+            <span class="hz-tag">Hz</span>
+          </div>
+
+          <div class="channel-wrap">
+            <span class="freq-label">Canal:</span>
+            <div class="channel-selector">
+              <button class="chan-btn ${p.channel === 'left' ? 'active' : ''}" data-id="${p.id}" data-action="set-channel" data-channel="left" title="Stânga (L)">Stânga (L)</button>
+              <button class="chan-btn ${p.channel === 'center' ? 'active' : ''}" data-id="${p.id}" data-action="set-channel" data-channel="center" title="Ambele (L+R)">Ambele (L+R)</button>
+              <button class="chan-btn ${p.channel === 'right' ? 'active' : ''}" data-id="${p.id}" data-action="set-channel" data-channel="right" title="Dreapta (R)">Dreapta (R)</button>
+            </div>
+          </div>
+
+          <div class="vol-wrap">
+            <span class="vol-label">Volum:</span>
+            <input type="range" min="0" max="1" step="0.01" value="${p.volume}" class="vol-slider" data-id="${p.id}" data-action="set-volume">
+            <span style="font-family: monospace; font-size: 0.75rem; font-weight: 700; color: var(--accent); min-width: 32px; text-align: right;">${Math.round(p.volume * 100)}%</span>
+          </div>
+
+          <div class="player-actions-group">
+            <button class="btn btn-play-row ${p.isPlaying ? 'is-playing' : ''}" data-id="${p.id}" data-action="toggle-play">
+              ${p.isPlaying ? '⏹ Oprește' : '▶ Pornește'}
+            </button>
+            <button class="btn-delete" data-id="${p.id}" data-action="delete" ${players.length <= 1 ? 'disabled' : ''} title="Șterge acest sunet">
+              ✕
+            </button>
+          </div>
+        `;
+
+        container.appendChild(row);
+      });
+
+      attachEvents();
+      updateMasterUI();
+    }
+
+    function attachEvents() {
+      const container = document.getElementById('players-list');
+
+      container.onclick = function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const id = target.getAttribute('data-id');
+        const action = target.getAttribute('data-action');
+        const player = players.find(p => p.id === id);
+        if (!player) return;
+
+        if (action === 'toggle-play') {
+          player.isPlaying = !player.isPlaying;
+          if (player.isPlaying && !masterPlaying) {
+            masterPlaying = true;
+          }
+          syncAudio();
+          renderPlayers();
+        } else if (action === 'set-channel') {
+          player.channel = target.getAttribute('data-channel');
+          syncAudio();
+          renderPlayers();
+          playTestTone(channelToPan(player.channel));
+        } else if (action === 'step-freq') {
+          const delta = parseFloat(target.getAttribute('data-delta')) || 1;
+          player.frequency = Math.max(1, Math.min(22000, Math.round((player.frequency + delta) * 100) / 100));
+          syncAudio();
+          renderPlayers();
+        } else if (action === 'delete') {
+          if (players.length > 1) {
+            players = players.filter(p => p.id !== id);
+            syncAudio();
+            renderPlayers();
+          }
+        }
+      };
+
+      container.oninput = function (e) {
+        const target = e.target;
+        const id = target.getAttribute('data-id');
+        const action = target.getAttribute('data-action');
+        const player = players.find(p => p.id === id);
+        if (!player) return;
+
+        if (action === 'freq-input') {
+          const val = parseFloat(target.value);
+          if (!isNaN(val) && val >= 1 && val <= 22000) {
+            player.frequency = val;
+            syncAudio();
+          }
+        } else if (action === 'set-volume') {
+          player.volume = parseFloat(target.value);
+          syncAudio();
+        }
+      };
+
+      container.onchange = function (e) {
+        const target = e.target;
+        if (target.getAttribute('data-action') === 'freq-input') {
+          let val = parseFloat(target.value);
+          if (isNaN(val) || val < 1) val = 1;
+          if (val > 22000) val = 22000;
+          const id = target.getAttribute('data-id');
+          const player = players.find(p => p.id === id);
+          if (player) {
+            player.frequency = val;
+            target.value = val;
+            syncAudio();
+          }
+        }
+      };
+    }
+
+    function updateMasterUI() {
+      const masterBtn = document.getElementById('btn-master-toggle');
+      const masterIcon = document.getElementById('master-icon');
+      const activePlaying = players.filter(p => p.isPlaying && masterPlaying).length;
+
+      if (masterPlaying && activePlaying > 0) {
+        masterBtn.className = 'btn btn-master-stop';
+        masterBtn.title = 'Oprește Toate Sunetele';
+        masterIcon.innerHTML = '<rect x="6" y="6" width="12" height="12"></rect>';
+      } else {
+        masterBtn.className = 'btn btn-master-play';
+        masterBtn.title = 'Pornește Toate Sunetele';
+        masterIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+      }
+    }
+
+    function addPlayer() {
+      initAudio();
+      players.push({
+        id: 'p-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
+        frequency: 234,
+        channel: 'center',
+        volume: masterVolume,
+        isPlaying: false
+      });
+      syncAudio();
+      renderPlayers();
+    }
+
+    function resetToDefault() {
+      masterPlaying = false;
+      masterVolume = 0.08;
+      document.getElementById('master-volume').value = 0.08;
+      document.getElementById('master-vol-percent').textContent = '8%';
+      players = [
+        {
+          id: 'p-' + Date.now(),
+          frequency: 234,
+          channel: 'center',
+          volume: 0.08,
+          isPlaying: false
+        }
+      ];
+      syncAudio();
+      renderPlayers();
+    }
+
+    document.getElementById('btn-add-top').onclick = addPlayer;
+    document.getElementById('btn-add-bottom').onclick = addPlayer;
+    document.getElementById('btn-reset').onclick = resetToDefault;
+
+    document.getElementById('btn-master-toggle').onclick = function () {
+      initAudio();
+      if (masterPlaying) {
+        masterPlaying = false;
+        players.forEach(p => p.isPlaying = false);
+      } else {
+        masterPlaying = true;
+        players.forEach(p => p.isPlaying = true);
+      }
+      syncAudio();
+      renderPlayers();
+    };
+
+    document.getElementById('master-volume').oninput = function (e) {
+      masterVolume = parseFloat(e.target.value);
+      const percentEl = document.getElementById('master-vol-percent');
+      if (percentEl) {
+        percentEl.textContent = Math.round(masterVolume * 100) + '%';
+      }
+      players.forEach(p => p.volume = masterVolume);
+      syncAudio();
+    };
+
+    function playTestTone(panValue) {
+      initAudio();
+      const now = audioCtx.currentTime;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      let panner = null;
+
+      if (typeof audioCtx.createStereoPanner === 'function') {
+        panner = audioCtx.createStereoPanner();
+        panner.pan.setValueAtTime(panValue, now);
+      }
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(234, now);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.65, now + 0.03);
+      gain.gain.linearRampToValueAtTime(0.65, now + 0.22);
+      gain.gain.linearRampToValueAtTime(0, now + 0.32);
+
+      if (panner) {
+        osc.connect(gain);
+        gain.connect(panner);
+        panner.connect(audioCtx.destination);
+      } else {
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+      }
+
+      osc.start(now);
+      osc.stop(now + 0.33);
+    }
+
+    function setBinauralPair(freqLeft, freqRight) {
+      initAudio();
+      if (players.length === 2 && players[0].frequency === freqLeft && players[1].frequency === freqRight) {
+        return;
+      }
+
+      if (players.length === 0) {
+        players.push({
+          id: 'p-' + Date.now() + '-1',
+          frequency: freqLeft,
+          channel: 'left',
+          volume: masterVolume,
+          isPlaying: false
+        });
+      } else {
+        players[0].frequency = freqLeft;
+        players[0].channel = 'left';
+      }
+
+      if (players.length >= 2) {
+        players[1].frequency = freqRight;
+        players[1].channel = 'right';
+        players = players.slice(0, 2);
+      } else {
+        players.push({
+          id: 'p-' + Date.now() + '-2',
+          frequency: freqRight,
+          channel: 'right',
+          volume: masterVolume,
+          isPlaying: false
+        });
+      }
+
+      syncAudio();
+      renderPlayers();
+    }
+
+    document.getElementById('btn-binaural-1').onclick = () => setBinauralPair(100, 104);
+    document.getElementById('btn-binaural-2').onclick = () => setBinauralPair(200, 204);
+    document.getElementById('btn-binaural-3').onclick = () => setBinauralPair(300, 304);
+    document.getElementById('btn-binaural-4').onclick = () => setBinauralPair(400, 404);
+
+    document.getElementById('master-vol-plus').onclick = function () {
+      masterVolume = Math.min(1, Math.round((masterVolume + 0.01) * 100) / 100);
+      document.getElementById('master-volume').value = masterVolume;
+      const percentEl = document.getElementById('master-vol-percent');
+      if (percentEl) {
+        percentEl.textContent = Math.round(masterVolume * 100) + '%';
+      }
+      players.forEach(p => p.volume = masterVolume);
+      syncAudio();
+    };
+
+    document.getElementById('master-vol-minus').onclick = function () {
+      masterVolume = Math.max(0, Math.round((masterVolume - 0.01) * 100) / 100);
+      document.getElementById('master-volume').value = masterVolume;
+      const percentEl = document.getElementById('master-vol-percent');
+      if (percentEl) {
+        percentEl.textContent = Math.round(masterVolume * 100) + '%';
+      }
+      players.forEach(p => p.volume = masterVolume);
+      syncAudio();
+    };
+
+    renderPlayers();
+  </script>
+</body>
+</html>
