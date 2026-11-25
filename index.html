@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Generator Frecvențe Audio Continuu</title>
-  <meta name="description" content="Generator simplu de frecvențe audio cu canale stereo și reglaj fin la zecimale." />
+  <meta name="description" content="Generator simplu de frecvențe audio cu canale stereo și reglaj fin de la 0.01 Hz." />
   <style>
     :root {
       --bg: #090d16;
@@ -430,7 +430,7 @@
       <div class="header-row">
         <h1 class="title">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"></path><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
-          Generator Frecvențe Audio Continuu (Reglaj Fin)
+          Generator Frecvențe Audio Continuu (Reglaj Fin de la 0.01 Hz)
         </h1>
       </div>
     </div>
@@ -553,7 +553,7 @@
           }
 
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(Math.max(1, p.frequency), now);
+          osc.frequency.setValueAtTime(Math.max(0.01, p.frequency), now);
           gain.gain.setValueAtTime(0, now);
 
           if (panner) {
@@ -573,7 +573,7 @@
           nodeMap.set(p.id, bundle);
         }
 
-        const targetFreq = Math.max(1, Math.min(22000, p.frequency));
+        const targetFreq = Math.max(0.01, Math.min(22000, p.frequency));
         if (Math.abs(bundle.osc.frequency.value - targetFreq) > 0.001) {
           bundle.osc.frequency.setTargetAtTime(targetFreq, now, 0.015);
         }
@@ -667,7 +667,7 @@
           playTestTone(channelToPan(player.channel));
         } else if (action === 'step-freq') {
           const delta = parseFloat(target.getAttribute('data-delta')) || 0.01;
-          player.frequency = Math.max(1, Math.min(22000, Math.round((player.frequency + delta) * 100) / 100));
+          player.frequency = Math.max(0.01, Math.min(22000, Math.round((player.frequency + delta) * 100) / 100));
           syncAudio();
           renderPlayers();
         } else if (action === 'delete') {
@@ -702,7 +702,7 @@
         const target = e.target;
         if (target.getAttribute('data-action') === 'freq-input') {
           let val = parseFloat(target.value);
-          if (isNaN(val) || val < 1) val = 1;
+          if (isNaN(val) || val < 0.01) val = 0.01;
           if (val > 22000) val = 22000;
           val = Math.round(val * 100) / 100;
           const id = target.getAttribute('data-id');
