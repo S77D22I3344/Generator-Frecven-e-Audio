@@ -704,7 +704,6 @@
           let val = parseFloat(target.value);
           if (isNaN(val) || val < 1) val = 1;
           if (val > 22000) val = 22000;
-          // Format to 2 decimals on blur/change
           val = Math.round(val * 100) / 100;
           const id = target.getAttribute('data-id');
           const player = players.find(p => p.id === id);
@@ -789,6 +788,7 @@
       }
       players.forEach(p => p.volume = masterVolume);
       syncAudio();
+      renderPlayers();
     };
 
     document.getElementById('master-vol-plus').onclick = function () {
@@ -800,6 +800,7 @@
       }
       players.forEach(p => p.volume = masterVolume);
       syncAudio();
+      renderPlayers();
     };
 
     document.getElementById('master-vol-minus').onclick = function () {
@@ -811,6 +812,7 @@
       }
       players.forEach(p => p.volume = masterVolume);
       syncAudio();
+      renderPlayers();
     };
 
     renderPlayers();
