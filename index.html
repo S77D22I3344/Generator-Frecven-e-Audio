@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Generator Frecvențe Audio Continuu</title>
-  <meta name="description" content="Generator simplu de frecvențe audio cu canale stereo și sunete binaurale." />
+  <meta name="description" content="Generator simplu de frecvențe audio cu canale stereo și reglaj fin la zecimale." />
   <style>
     :root {
       --bg: #090d16;
@@ -184,18 +184,6 @@
       border-color: #ef4444;
     }
 
-    .btn-download {
-      background-color: #1f2937;
-      color: var(--text-muted);
-      border-color: #374151;
-      font-size: 0.75rem;
-      padding: 0.4rem 0.75rem;
-    }
-    .btn-download:hover {
-      background-color: #374151;
-      color: #fff;
-    }
-
     .players-list {
       display: flex;
       flex-direction: column;
@@ -259,14 +247,14 @@
     }
 
     .freq-input {
-      width: 85px;
+      width: 100px;
       height: 33px;
       background: #030712;
       border: 1px solid #374151;
       border-radius: 6px;
       padding: 0 0.4rem;
       font-family: monospace;
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 700;
       color: #fff;
       text-align: center;
@@ -442,7 +430,7 @@
       <div class="header-row">
         <h1 class="title">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"></path><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
-          Generator Frecvențe Audio Continuu
+          Generator Frecvențe Audio Continuu (Reglaj Fin)
         </h1>
       </div>
     </div>
@@ -471,15 +459,6 @@
       </div>
     </div>
 
-    <!-- Secțiune Sunete Binaurale -->
-    <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1.25rem; display: flex; align-items: center; gap: 0.5rem; justify-content: space-between; flex-wrap: wrap; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);">
-      <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); white-space: nowrap;">Binaurale:</span>
-      <button class="btn btn-download" id="btn-binaural-1" style="flex: 1; min-width: 90px;">100 / 104 Hz</button>
-      <button class="btn btn-download" id="btn-binaural-2" style="flex: 1; min-width: 90px;">200 / 204 Hz</button>
-      <button class="btn btn-download" id="btn-binaural-3" style="flex: 1; min-width: 90px;">300 / 304 Hz</button>
-      <button class="btn btn-download" id="btn-binaural-4" style="flex: 1; min-width: 90px;">400 / 404 Hz</button>
-    </div>
-
     <!-- Lista de playere -->
     <div id="players-list" class="players-list"></div>
 
@@ -499,7 +478,7 @@
     let players = [
       {
         id: 'p-1',
-        frequency: 234,
+        frequency: 234.00,
         channel: 'center',
         volume: 0.08,
         isPlaying: false
@@ -595,7 +574,7 @@
         }
 
         const targetFreq = Math.max(1, Math.min(22000, p.frequency));
-        if (Math.abs(bundle.osc.frequency.value - targetFreq) > 0.01) {
+        if (Math.abs(bundle.osc.frequency.value - targetFreq) > 0.001) {
           bundle.osc.frequency.setTargetAtTime(targetFreq, now, 0.015);
         }
 
@@ -624,9 +603,9 @@
         row.innerHTML = `
           <div class="freq-box-wrap">
             <span class="freq-label">Frecvență:</span>
-            <button class="step-btn" data-id="${p.id}" data-action="step-freq" data-delta="-1" title="Scade 1 Hz">-</button>
+            <button class="step-btn" data-id="${p.id}" data-action="step-freq" data-delta="-0.01" title="Scade 0.01 Hz">-</button>
             <input type="text" inputmode="decimal" class="freq-input" value="${p.frequency}" data-id="${p.id}" data-action="freq-input">
-            <button class="step-btn" data-id="${p.id}" data-action="step-freq" data-delta="1" title="Crește 1 Hz">+</button>
+            <button class="step-btn" data-id="${p.id}" data-action="step-freq" data-delta="0.01" title="Crește 0.01 Hz">+</button>
             <span class="hz-tag">Hz</span>
           </div>
 
@@ -687,7 +666,7 @@
           renderPlayers();
           playTestTone(channelToPan(player.channel));
         } else if (action === 'step-freq') {
-          const delta = parseFloat(target.getAttribute('data-delta')) || 1;
+          const delta = parseFloat(target.getAttribute('data-delta')) || 0.01;
           player.frequency = Math.max(1, Math.min(22000, Math.round((player.frequency + delta) * 100) / 100));
           syncAudio();
           renderPlayers();
@@ -709,7 +688,7 @@
 
         if (action === 'freq-input') {
           const val = parseFloat(target.value);
-          if (!isNaN(val) && val >= 1 && val <= 22000) {
+          if (!isNaN(val)) {
             player.frequency = val;
             syncAudio();
           }
@@ -725,6 +704,8 @@
           let val = parseFloat(target.value);
           if (isNaN(val) || val < 1) val = 1;
           if (val > 22000) val = 22000;
+          // Format to 2 decimals on blur/change
+          val = Math.round(val * 100) / 100;
           const id = target.getAttribute('data-id');
           const player = players.find(p => p.id === id);
           if (player) {
@@ -756,7 +737,7 @@
       initAudio();
       players.push({
         id: 'p-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
-        frequency: 234,
+        frequency: 234.00,
         channel: 'center',
         volume: masterVolume,
         isPlaying: false
@@ -773,7 +754,7 @@
       players = [
         {
           id: 'p-' + Date.now(),
-          frequency: 234,
+          frequency: 234.00,
           channel: 'center',
           volume: 0.08,
           isPlaying: false
@@ -809,82 +790,6 @@
       players.forEach(p => p.volume = masterVolume);
       syncAudio();
     };
-
-    function playTestTone(panValue) {
-      initAudio();
-      const now = audioCtx.currentTime;
-
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      let panner = null;
-
-      if (typeof audioCtx.createStereoPanner === 'function') {
-        panner = audioCtx.createStereoPanner();
-        panner.pan.setValueAtTime(panValue, now);
-      }
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(234, now);
-
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.65, now + 0.03);
-      gain.gain.linearRampToValueAtTime(0.65, now + 0.22);
-      gain.gain.linearRampToValueAtTime(0, now + 0.32);
-
-      if (panner) {
-        osc.connect(gain);
-        gain.connect(panner);
-        panner.connect(audioCtx.destination);
-      } else {
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-      }
-
-      osc.start(now);
-      osc.stop(now + 0.33);
-    }
-
-    function setBinauralPair(freqLeft, freqRight) {
-      initAudio();
-      if (players.length === 2 && players[0].frequency === freqLeft && players[1].frequency === freqRight) {
-        return;
-      }
-
-      if (players.length === 0) {
-        players.push({
-          id: 'p-' + Date.now() + '-1',
-          frequency: freqLeft,
-          channel: 'left',
-          volume: masterVolume,
-          isPlaying: false
-        });
-      } else {
-        players[0].frequency = freqLeft;
-        players[0].channel = 'left';
-      }
-
-      if (players.length >= 2) {
-        players[1].frequency = freqRight;
-        players[1].channel = 'right';
-        players = players.slice(0, 2);
-      } else {
-        players.push({
-          id: 'p-' + Date.now() + '-2',
-          frequency: freqRight,
-          channel: 'right',
-          volume: masterVolume,
-          isPlaying: false
-        });
-      }
-
-      syncAudio();
-      renderPlayers();
-    }
-
-    document.getElementById('btn-binaural-1').onclick = () => setBinauralPair(100, 104);
-    document.getElementById('btn-binaural-2').onclick = () => setBinauralPair(200, 204);
-    document.getElementById('btn-binaural-3').onclick = () => setBinauralPair(300, 304);
-    document.getElementById('btn-binaural-4').onclick = () => setBinauralPair(400, 404);
 
     document.getElementById('master-vol-plus').onclick = function () {
       masterVolume = Math.min(1, Math.round((masterVolume + 0.01) * 100) / 100);
